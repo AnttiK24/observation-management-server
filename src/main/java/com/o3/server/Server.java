@@ -80,10 +80,10 @@ public class Server implements HttpHandler {
 	
     public static void main(String[] args) throws Exception {
         HttpServer server = HttpServer.create(new InetSocketAddress(8001),0);
-        server.createContext("/applications/myapp", new Server());
+        server.createContext("/datarecord", new Server());
         server.setExecutor(null); // creates a default executor
-        System.out.println("käynnistit serverin http://localhost:8001/applications/myapp");
-        //curl http://127.0.0.1:8001/applications/myapp -d "This is a message"
+        System.out.println("käynnistit serverin http://localhost:8001/datarecord");
+        //curl http://127.0.0.1:8001/datarecord -d "This is a message"
 		server.start();
     }
 
