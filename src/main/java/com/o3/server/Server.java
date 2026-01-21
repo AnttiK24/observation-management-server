@@ -3,9 +3,16 @@ package com.o3.server;
 import com.sun.net.httpserver.*;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.TrustManagerFactory;
+
 import java.io.*;
 
 
@@ -75,17 +82,66 @@ public class Server implements HttpHandler {
 		//400 with a message “Not supported” (witouth the “). 
 	}
 
-
     }
 	
-    public static void main(String[] args) throws Exception {
-        HttpServer server = HttpServer.create(new InetSocketAddress(8001),0);
-        server.createContext("/datarecord", new Server());
-        server.setExecutor(null); // creates a default executor
-        System.out.println("käynnistit serverin http://localhost:8001/datarecord");
-        //curl http://127.0.0.1:8001/datarecord -d "This is a message"
-		server.start();
+    private static SSLContext myServerSSLContext(String location, String passW) throws Exception {
+
+        char[] passphrase = passW.toCharArray();
+        KeyStore ks = KeyStore.getInstance("JKS");
+        ks.load(new FileInputStream(location), passphrase);
+
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+        kmf.init(ks, passphrase);
+
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+        tmf.init(ks);
+
+        SSLContext ssl = SSLContext.getInstance("TLS");
+        ssl.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+
+        return ssl;
     }
+
+    
+
+    public static void main(String[] args) throws Exception {
+        try{ 
+            
+            HttpsServer server = HttpsServer.create(new InetSocketAddress(8001),0);
+            UserAuthenticator User = new UserAuthenticator("datarecord");
+            HttpContext context = server.createContext("/datarecord", new Server()); 
+            context.setAuthenticator(User);
+            server.createContext("/registration", new RegistrationHandler(User));
+            
+            String keystorePath_location = args[0];
+            String keystore_passW = args[1];
+
+            SSLContext sslContext = myServerSSLContext(keystorePath_location,keystore_passW);
+            server.setHttpsConfigurator (new HttpsConfigurator(sslContext) { 
+                public void configure (HttpsParameters params) { 
+                    InetSocketAddress remote = params.getClientAddress(); 
+                    SSLContext c = getSSLContext(); 
+                    SSLParameters sslparams = c.getDefaultSSLParameters(); 
+                    params.setSSLParameters(sslparams); 
+                }
+            });
+            server.setExecutor(null); // creates a default executor
+            System.out.println("käynnistit serverin http://localhost:8001/datarecord");
+            //curl https://127.0.0.1:8001/obervation -d "This is a message"
+            server.start();
+        } catch (FileNotFoundException e) { 
+            // Certificate file not found! 
+            System.out.println("Certificate not found!"); 
+            e.printStackTrace(); 
+        } catch (Exception e) { 
+            e.printStackTrace(); 
+        }     
+            
+    }
+
+
+
+    
 
 	
 	
