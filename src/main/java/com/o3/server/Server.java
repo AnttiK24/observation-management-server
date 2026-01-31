@@ -64,12 +64,19 @@ public class Server implements HttpHandler {
 
                     if (!JObject.isNull("state_vector")) {
                         JSONObject state = JObject.getJSONObject("state_vector");
-                        state.getDouble("x");
-                        state.getDouble("y");
-                        state.getDouble("z");
-                        state.getDouble("vx");
-                        state.getDouble("vy");
-                        state.getDouble("vz");
+                        
+                        if (state.has("position_au") && state.has("velocity_au_per_day")) {
+                            JSONArray position = state.getJSONArray("position_au");
+                            JSONArray velocity = state.getJSONArray("velocity_au_per_day");
+                            if(position.length() > 0) {
+                                position.getDouble(0);
+                            }
+                            if(velocity.length() > 0){
+                               velocity.getDouble(0); 
+                            } 
+                        }else{
+                            throw new JSONException("invalid format in State_vector");
+                        }
                     }
 
 
