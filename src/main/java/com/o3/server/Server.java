@@ -43,13 +43,20 @@ public class Server implements HttpHandler {
             try {
                 JSONObject JObject = new JSONObject(text);    
                 
-                if(JObject.has("orbital_elements") || JObject.has("state_vector")){
+                
+                if(!JObject.isNull("target_body_name") &&
+                    !JObject.isNull("center_body_name") &&
+                    !JObject.isNull("epoch") &&
+                    !JObject.isNull("orbital_elements") &&
+                    !JObject.isNull("state_vector")) {
+
+
                     ObservationRecord record = new ObservationRecord(
                     JObject.getString("target_body_name"),
                     JObject.getString("center_body_name"),
                     JObject.getString("epoch"),
-                    JObject.optJSONObject("orbital_elements"),
-                    JObject.optJSONObject("state_vector")
+                    JObject.getJSONObject("orbital_elements"),
+                    JObject.getJSONObject("state_vector")
                     );
 
                     observationRecords.add(record);
