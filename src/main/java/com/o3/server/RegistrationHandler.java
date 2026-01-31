@@ -11,6 +11,9 @@ import java.util.stream.Collectors;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
+import org.json.JSONObject;
+import org.json.JSONException;
+
 public class RegistrationHandler implements HttpHandler {
     
     private UserAuthenticator userAuth;
@@ -32,49 +35,67 @@ public class RegistrationHandler implements HttpHandler {
             String text = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
         
             stream.close();
-            String[] credits = text.split(":"); 
+            
+            try {
+                JSONObject object = new JSONObject(text);
+                
+                if(!object.getString("username").isEmpty() && !object.getString("password").isEmpty() && !object.getString("email").isEmpty()) {
+                    String urname = object.getString("username");
+                    String password = object.getString("password");
+                    String email = object.getString("email"); 
 
-            if (credits.length == 2 && !credits[0].isEmpty() && !credits[1].isEmpty()) {
-                String urname = credits[0];
-                String pword = credits[1];
+                    User newuser = new User(urname, password, email);
 
-                boolean NewUser = userAuth.addUser(urname, pword);
+                    boolean NewUser = userAuth.addUser(newuser);
 
-                if(NewUser){
-                    String responseString = "Registeration was successfull";
-                    byte [] bytes = responseString.getBytes("UTF-8");
-                    exchange.sendResponseHeaders(200, bytes.length);
-                    OutputStream outputStream = exchange.getResponseBody();
-                    outputStream.write(responseString.getBytes()); 
-                    outputStream.flush();
-                    outputStream.close();
+                    if(NewUser){
+                        String responseString = "Registeration was successfull";
+                        byte [] bytes = responseString.getBytes("UTF-8");
+                        exchange.getResponseHeaders().set("Content-Type", "application/json");
+                        exchange.sendResponseHeaders(200, bytes.length);
+                        OutputStream outputStream = exchange.getResponseBody();
+                        outputStream.write(responseString.getBytes()); 
+                        outputStream.flush();
+                        outputStream.close();
+                        
+                    }else{
+                        String responseString = "User already exists";
+                        byte [] bytes = responseString.getBytes("UTF-8");
+                        exchange.getResponseHeaders().set("Content-Type", "application/json");
+                        exchange.sendResponseHeaders(403, bytes.length);
+                        OutputStream outputStream = exchange.getResponseBody();
+                        outputStream.write(responseString.getBytes()); 
+                        outputStream.flush();
+                        outputStream.close();
+                        
+                    }
                     
-                }else{
-                    String responseString = "User already exists";
+                }else {
+                    String responseString = "Credentials were not ok ";
                     byte [] bytes = responseString.getBytes("UTF-8");
-                    exchange.sendResponseHeaders(403, bytes.length);
+                    exchange.getResponseHeaders().set("Content-Type", "application/json");
+                    exchange.sendResponseHeaders(400, bytes.length);
                     OutputStream outputStream = exchange.getResponseBody();
                     outputStream.write(responseString.getBytes()); 
                     outputStream.flush();
                     outputStream.close();
                     
                 }
-                
-            }else {
-                String responseString = "Credentials were not ok , try format username:password";
+            }catch (JSONException e){
+                String responseString = "Credentials were not ok , exception catch";
                 byte [] bytes = responseString.getBytes("UTF-8");
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
                 exchange.sendResponseHeaders(400, bytes.length);
                 OutputStream outputStream = exchange.getResponseBody();
                 outputStream.write(responseString.getBytes()); 
                 outputStream.flush();
                 outputStream.close();
-                   
-            }    
+            } 
             
 
-            exchange.sendResponseHeaders(200, -1);
+            
             exchange.close();
-		// Handle POST requests here (users send this for sending messages) 
+		
 		} else if (exchange.getRequestMethod().equalsIgnoreCase("GET")) { 
 
             String responseString = "Not Supported";

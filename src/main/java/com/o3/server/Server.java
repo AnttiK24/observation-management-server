@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -13,13 +14,17 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManagerFactory;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.*;
 
 
 
 public class Server implements HttpHandler {
 		
-	private  List<String> message = new ArrayList<>();
+	private List<ObservationRecord> observationRecords = Collections.synchronizedList(new ArrayList<>());
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
@@ -34,28 +39,72 @@ public class Server implements HttpHandler {
             String text = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
             
             stream.close();
-            message.add(text);
+            
+            try {
+                JSONObject JObject = new JSONObject(text);    
+                
+                if(JObject.has("orbital_elements") || JObject.has("state_vector")){
+                    ObservationRecord record = new ObservationRecord(
+                    JObject.getString("target_body_name"),
+                    JObject.getString("center_body_name"),
+                    JObject.getString("epoch"),
+                    JObject.optJSONObject("orbital_elements"),
+                    JObject.optJSONObject("state_vector")
+                    );
 
-            exchange.sendResponseHeaders(200, -1);
+                    observationRecords.add(record);
+
+                    exchange.getResponseHeaders().set("Content-Type", "application/json");
+                    exchange.sendResponseHeaders(200, -1);
+                }else{
+                    String error = "Missing elements";
+                    byte[] bytes = error.getBytes(StandardCharsets.UTF_8);
+                    exchange.sendResponseHeaders(400, bytes.length);
+                    OutputStream os = exchange.getResponseBody();
+                    os.write(bytes);
+                    os.close();
+                }
+            }catch (JSONException e) {
+                
+                String error = "Invalid format, expception";
+                byte[] bytes = error.getBytes(StandardCharsets.UTF_8);
+                exchange.sendResponseHeaders(400, bytes.length);
+                OutputStream os = exchange.getResponseBody();
+                os.write(bytes);
+                os.close();
+            }
+    
             exchange.close();
 		// Handle POST requests here (users send this for sending messages) 
 		} else if (exchange.getRequestMethod().equalsIgnoreCase("GET")) { 
 
-            String responseString = "";
-
-            if (message.isEmpty()) {
-                responseString = "No messages";
-            }else {
-                responseString = message.toString();
-            }
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
 
            
+            if (observationRecords.isEmpty()) {
+                exchange.sendResponseHeaders(204, -1);
+                exchange.close();
+                return;
+            }
 
-            byte [] bytes = responseString.getBytes("UTF-8");
-            exchange.sendResponseHeaders(200, bytes.length); 
+            
+            JSONArray responseArray = new JSONArray();
+            
+            
+            synchronized (observationRecords) {
+                for (ObservationRecord record : observationRecords) {
+                    responseArray.put(record.toJSONObject());
+                }
+            }
+
+            String responseString = responseArray.toString();
+            byte[] bytes = responseString.getBytes(StandardCharsets.UTF_8);
+
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, bytes.length);
 
             OutputStream outputStream = exchange.getResponseBody();
-            outputStream.write(responseString.getBytes()); 
+            outputStream.write(bytes);
             outputStream.flush();
             outputStream.close();
             exchange.close();
@@ -78,8 +127,7 @@ public class Server implements HttpHandler {
             exchange.close();
             
 
-		// Inform user here that only POST and GET functions are supported and send an error code 
-		//400 with a message “Not supported” (witouth the “). 
+		
 	}
 
     }
@@ -105,6 +153,9 @@ public class Server implements HttpHandler {
     
 
     public static void main(String[] args) throws Exception {
+       
+       
+        
         try{ 
             
             HttpsServer server = HttpsServer.create(new InetSocketAddress(8001),0);

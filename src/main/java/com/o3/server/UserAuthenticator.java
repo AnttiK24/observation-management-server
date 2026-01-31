@@ -7,33 +7,37 @@ import com.sun.net.httpserver.BasicAuthenticator;
 
 public class UserAuthenticator extends com.sun.net.httpserver.BasicAuthenticator {
     
-    private Map<String,String>users = null;
     
+    private Map<String,User>users = null;
+    
+
     
     UserAuthenticator(String realm) {
         super(realm);
         
-        users = new Hashtable<String,String>();  
         
-        users.put("dummy", "passwd"); 
+        
+        users = new Hashtable<String,User>();  
+        
+        addUser(new User("dummy", "passwd", "email")); 
     }
     
     @Override
     public boolean checkCredentials(String username, String password) {
         
-        String PasswordCheck = users.get(username);
-
-        if(!PasswordCheck.equals(null) && PasswordCheck.equals(password) ) {
+        User checthisuser = users.get(username);
+ 
+        if(checthisuser != null && checthisuser.getPassword().equals(password) ) {
             return true;
         }
 
         return false;
     }
 
-    public boolean addUser(String userName, String password) {
+    public boolean addUser(User newUser) {
 
-        if (!users.containsKey(userName)) {
-            users.put(userName, password);
+        if (!users.containsKey(newUser.getName())) {
+            users.put(newUser.getName(), newUser);
             return true;
         }else {
             return false;
