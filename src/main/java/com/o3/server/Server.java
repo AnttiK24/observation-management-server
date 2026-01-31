@@ -43,20 +43,42 @@ public class Server implements HttpHandler {
             try {
                 JSONObject JObject = new JSONObject(text);    
                 
+                boolean body_and_epoch = !JObject.isNull("target_body_name") &&
+                                       !JObject.isNull("center_body_name") &&
+                                       !JObject.isNull("epoch");
                 
-                if(!JObject.isNull("target_body_name") &&
-                    !JObject.isNull("center_body_name") &&
-                    !JObject.isNull("epoch") &&
-                    !JObject.isNull("orbital_elements") &&
-                    !JObject.isNull("state_vector")) {
+                boolean orbit_and_state = !JObject.isNull("orbital_elements") || 
+                                         !JObject.isNull("state_vector");
+                
+                if(body_and_epoch && orbit_and_state) {
+
+                    if (!JObject.isNull("orbital_elements")) {
+                        JSONObject orbital = JObject.getJSONObject("orbital_elements");
+                        orbital.getDouble("eccentricity");
+                        orbital.getDouble("semi_major_axis_au");
+                        orbital.getDouble("inclination_deg");
+                        orbital.getDouble("longitude_ascending_node_deg");
+                        orbital.getDouble("argument_of_periapsis_deg");
+                        orbital.getDouble("mean_anomaly_deg");
+                    }
+
+                    if (!JObject.isNull("state_vector")) {
+                        JSONObject state = JObject.getJSONObject("state_vector");
+                        state.getDouble("x");
+                        state.getDouble("y");
+                        state.getDouble("z");
+                        state.getDouble("vx");
+                        state.getDouble("vy");
+                        state.getDouble("vz");
+                    }
 
 
                     ObservationRecord record = new ObservationRecord(
                     JObject.getString("target_body_name"),
                     JObject.getString("center_body_name"),
                     JObject.getString("epoch"),
-                    JObject.getJSONObject("orbital_elements"),
-                    JObject.getJSONObject("state_vector")
+                    JObject.optJSONObject("orbital_elements"),
+                    JObject.optJSONObject("state_vector")
                     );
 
                     observationRecords.add(record);
