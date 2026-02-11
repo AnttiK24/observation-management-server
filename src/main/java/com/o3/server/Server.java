@@ -243,7 +243,11 @@ public class Server implements HttpHandler {
             String dbPath = getUrl();
             String[] arrays = dbPath.split(":");
             MessageDatabase sql = MessageDatabase.getInstance();
-            sql.open(arrays[2]);
+            
+            
+            //sql.open(arrays[2]);
+            sql.open(dbPath);
+            
             MessageDatabase.getInstance();
 
             HttpsServer server = HttpsServer.create(new InetSocketAddress(8001),0);
