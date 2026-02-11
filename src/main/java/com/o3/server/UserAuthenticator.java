@@ -17,38 +17,46 @@ public class UserAuthenticator extends com.sun.net.httpserver.BasicAuthenticator
         
         
         
-        users = new Hashtable<String,User>();  
-        
-        addUser(new User("dummy", "passwd", "email")); 
+         
     }
     
     @Override
     public boolean checkCredentials(String username, String password) {
         
-        User checthisuser = users.get(username);
- 
-        if(checthisuser != null && checthisuser.getPassword().equals(password) ) {
-            return true;
-        }
-
-        return false;
-    }
-
-    public boolean addUser(User newUser) {
-
-        if (!users.containsKey(newUser.getName())) {
-            users.put(newUser.getName(), newUser);
-            return true;
-        }else {
+        MessageDatabase sql = MessageDatabase.getInstance();
+        String userinfo = sql.getRegisterationInfo(username);
+        
+        if(userinfo == null) {
             return false;
         }
-        
-        
 
+        String[] parts = userinfo.split(":");
+        String sqlPassword = parts[1];
+
+        return sqlPassword.equals(password);
     }
 
+    public boolean addUser(User newUser, String path) {
+
+        MessageDatabase sql = MessageDatabase.getInstance();
+
+        try{
+            if(sql.getRegisterationInfo(newUser.getName()) == null){
+                
+                sql.saveUser(newUser, path);
+                return true;
+            }else {
+                return false;
+            }
+        } catch(Exception e){
+            System.err.println(e);
+        }
+    
+        return false;
+    }  
 
 }
+
         
     
 

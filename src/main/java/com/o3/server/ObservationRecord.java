@@ -1,5 +1,8 @@
 package com.o3.server;
 
+import java.util.List;
+import java.util.Map;
+
 import org.json.JSONObject;
 
 public class ObservationRecord {
@@ -7,14 +10,41 @@ public class ObservationRecord {
     private String centerBodyName;
     private String epoch;
     private JSONObject orbitalElements; 
-    private JSONObject stateVector;     
+    private JSONObject stateVector; 
+    private JSONObject metadata;
+        
 
-    public ObservationRecord(String targetBodyName, String centerBodyName, String epoch, JSONObject orbitalElements, JSONObject stateVector) {
+    public ObservationRecord(String targetBodyName, String centerBodyName, String epoch, JSONObject orbitalElements, JSONObject stateVector, JSONObject metadata) {
         this.targetBodyName = targetBodyName;
         this.centerBodyName = centerBodyName;
         this.epoch = epoch;
         this.orbitalElements = orbitalElements;
         this.stateVector = stateVector;
+        this.metadata = metadata;
+    }
+
+    public String getTargetBodyName() {
+        return targetBodyName;
+    }
+
+    public String getCenterBodyName() {
+        return centerBodyName;
+    }
+
+    public String getEpoch() {
+        return epoch;
+    }
+
+    public JSONObject getOrbitalElements() {
+        return orbitalElements;
+    }
+
+    public JSONObject getStateVector() {
+        return stateVector;
+    }
+
+    public JSONObject getMetadata() {
+        return metadata;
     }
 
     public JSONObject toJSONObject() {
@@ -31,6 +61,11 @@ public class ObservationRecord {
             json.put("state_vector", this.stateVector);
         }
         
+        if (this.metadata != null) {
+            json.put("metadata", this.metadata);
+        }
+
+
         return json;
     }
 }

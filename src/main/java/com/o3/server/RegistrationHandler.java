@@ -39,16 +39,23 @@ public class RegistrationHandler implements HttpHandler {
             try {
                 JSONObject object = new JSONObject(text);
                 
-                if(!object.getString("username").isEmpty() && !object.getString("password").isEmpty() && !object.getString("email").isEmpty()) {
+                if(!object.getString("username").isEmpty() && !object.getString("password").isEmpty() && !object.getString("email").isEmpty() && !object.getString("nickname").isEmpty()) {
                     String urname = object.getString("username");
                     String password = object.getString("password");
-                    String email = object.getString("email"); 
+                    String email = object.getString("email");
+                    String nickname = object.getString("nickname"); 
+                    
 
-                    User newuser = new User(urname, password, email);
+                    User newuser = new User(urname, password, email, nickname);
 
-                    boolean NewUser = userAuth.addUser(newuser);
+                    boolean NewUser = userAuth.addUser(newuser, getUrl());
 
                     if(NewUser){
+
+                        MessageDatabase obje = MessageDatabase.getInstance();
+                        String path = getUrl();
+                        obje.saveUser(newuser, path);
+
                         String responseString = "Registeration was successfull";
                         byte [] bytes = responseString.getBytes("UTF-8");
                         exchange.getResponseHeaders().set("Content-Type", "application/json");
@@ -81,7 +88,7 @@ public class RegistrationHandler implements HttpHandler {
                     outputStream.close();
                     
                 }
-            }catch (JSONException e){
+            }catch (Exception e){
                 String responseString = "Credentials were not ok , exception catch";
                 byte [] bytes = responseString.getBytes("UTF-8");
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
@@ -122,9 +129,23 @@ public class RegistrationHandler implements HttpHandler {
             outputStream.flush();
             outputStream.close();
             exchange.close(); 
-	}
+	
+        }
 
 
 
     }
+
+    private static String getUrl() {
+        String dbPath = System.getenv("DATABASE_PATH");
+        //String dbPath = "jdbc:sqlite:DB";
+        if(dbPath == null || dbPath.isEmpty()){
+                throw new IllegalStateException("ei loyda polkua");
+        }
+
+        return dbPath;
+    }
+
+
+
 }

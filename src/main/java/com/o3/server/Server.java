@@ -4,6 +4,10 @@ import com.sun.net.httpserver.*;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
+import java.sql.SQLException;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,11 +34,12 @@ public class Server implements HttpHandler {
     public void handle(HttpExchange exchange) throws IOException {
 
 
-
+        
         String requestParamValue=null; 
 
         if (exchange.getRequestMethod().equalsIgnoreCase("POST")) {   
             
+
             InputStream stream = exchange.getRequestBody();
             String text = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
             
@@ -49,8 +54,9 @@ public class Server implements HttpHandler {
                 
                 boolean orbit_and_state = !JObject.isNull("orbital_elements") || 
                                          !JObject.isNull("state_vector");
+                boolean meta_data = !JObject.isNull("metadata");                         
                 
-                if(body_and_epoch && orbit_and_state) {
+                if(body_and_epoch && orbit_and_state && meta_data) {
 
                     if (!JObject.isNull("orbital_elements")) {
                         JSONObject orbital = JObject.getJSONObject("orbital_elements");
@@ -78,17 +84,46 @@ public class Server implements HttpHandler {
                             throw new JSONException("invalid format in State_vector");
                         }
                     }
+                    
 
+                    //creating metadata with utc time --->
+                    ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));  
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX");  
+                    String dateText = now.format(formatter);  
+                    
+
+                    String user = exchange.getPrincipal().getUsername();
+
+                    JSONObject metadata = new JSONObject();
+                    
+
+                    MessageDatabase sql = MessageDatabase.getInstance();
+                    String userinfo = sql.getRegisterationInfo(user);
+                    String[] userparts = userinfo.split(":");
+                    
+                    
+                    metadata.put("record_time_received", dateText);
+                    metadata.put("record_owner", userparts[3]);
+                    metadata.put("id",sql.createUniqueID());
+                    metadata.put("record_payload",JObject.optString("record_payload", ""));
+
+                    
+                    //metadata created <---
 
                     ObservationRecord record = new ObservationRecord(
                     JObject.getString("target_body_name"),
                     JObject.getString("center_body_name"),
                     JObject.getString("epoch"),
                     JObject.optJSONObject("orbital_elements"),
-                    JObject.optJSONObject("state_vector")
+                    JObject.optJSONObject("state_vector"),
+                    metadata
                     );
 
                     observationRecords.add(record);
+                    
+                    MessageDatabase sqldata = MessageDatabase.getInstance();
+                    String dbPath = getUrl();
+                    sqldata.savedata(record ,dbPath);
 
                     exchange.getResponseHeaders().set("Content-Type", "application/json");
                     exchange.sendResponseHeaders(200, -1);
@@ -100,7 +135,7 @@ public class Server implements HttpHandler {
                     os.write(bytes);
                     os.close();
                 }
-            }catch (JSONException e) {
+            }catch (Exception e) {
                 
                 String error = "Invalid format, expception";
                 byte[] bytes = error.getBytes(StandardCharsets.UTF_8);
@@ -116,8 +151,10 @@ public class Server implements HttpHandler {
 
             exchange.getResponseHeaders().set("Content-Type", "application/json");
 
+            MessageDatabase sql = MessageDatabase.getInstance();
+            List<ObservationRecord> messages = sql.getMessage();
            
-            if (observationRecords.isEmpty()) {
+            if (messages.isEmpty()) {
                 exchange.sendResponseHeaders(204, -1);
                 exchange.close();
                 return;
@@ -128,7 +165,7 @@ public class Server implements HttpHandler {
             
             
             synchronized (observationRecords) {
-                for (ObservationRecord record : observationRecords) {
+                for (ObservationRecord record : messages) {
                     responseArray.put(record.toJSONObject());
                 }
             }
@@ -186,6 +223,15 @@ public class Server implements HttpHandler {
         return ssl;
     }
 
+    private static String getUrl() {
+        String dbPath = System.getenv("DATABASE_PATH");
+        //String dbPath = "jdbc:sqlite:DB";
+        if(dbPath == null || dbPath.isEmpty()){
+                throw new IllegalStateException("ei loyda polkua");
+        }
+
+        return dbPath;
+    }
     
 
     public static void main(String[] args) throws Exception {
@@ -193,7 +239,13 @@ public class Server implements HttpHandler {
        
         
         try{ 
-            
+
+            String dbPath = getUrl();
+            String[] arrays = dbPath.split(":");
+            MessageDatabase sql = MessageDatabase.getInstance();
+            sql.open(arrays[2]);
+            MessageDatabase.getInstance();
+
             HttpsServer server = HttpsServer.create(new InetSocketAddress(8001),0);
             UserAuthenticator User = new UserAuthenticator("datarecord");
             HttpContext context = server.createContext("/datarecord", new Server()); 
