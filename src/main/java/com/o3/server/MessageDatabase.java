@@ -184,20 +184,29 @@ public class MessageDatabase {
                 String center = rs.getString("center");
                 String epoch = rs.getString("epoch");
 
-                JSONObject elements = new JSONObject(rs.getString("elements"));
-                JSONObject vector = new JSONObject(rs.getString("vector"));
-                JSONObject meta = new JSONObject(rs.getString("meta"));
+                String elString = rs.getString("elements");
+                String vecString = rs.getString("vector");
+                String metaString = rs.getString("meta");
+
+                
+                JSONObject elements = (elString == null || elString.equals("{}")) ? null : new JSONObject(elString);
+                JSONObject vector = (vecString == null || vecString.equals("{}")) ? null : new JSONObject(vecString);
+                
+                
+                JSONObject meta = (metaString != null) ? new JSONObject(metaString) : new JSONObject();
+                
 
                 long timeLong = rs.getLong("record_time_received");
                 meta.put("record_time_received", formatEpoch(timeLong));
                 meta.put("id", rs.getInt("id"));
 
-                
-
                 ObservationRecord new_message = new ObservationRecord(target,center,epoch,elements,vector,meta);
                 messagelist.add(new_message);
+
+                /* 
+
                 
-                
+                */
             }
 
             
