@@ -97,11 +97,12 @@ public class MessageDatabase {
         String target = record.getTargetBodyName();
         String center = record.getCenterBodyName();
         String epoch = record.getEpoch();
-        String elements = record.getOrbitalElements().toString();
-        String vector = record.getStateVector().toString();
+        //String elements = record.getOrbitalElements().toString();
+        //String vector = record.getStateVector().toString();
         String meta = record.getMetadata().toString();
 
-        
+        String elements = (record.getOrbitalElements() != null) ? record.getOrbitalElements().toString() : "{}";
+        String vector = (record.getStateVector() != null) ? record.getStateVector().toString() : "{}";
         //String record_time_recieved = record.getMetadata().getString("record_time_received");
         //String record_owner = record.getMetadata().getString("record_owner");
         
