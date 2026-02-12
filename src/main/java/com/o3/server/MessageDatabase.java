@@ -43,16 +43,16 @@ public class MessageDatabase {
      public void init() throws SQLException {
         
         if(null != dbConnection) {
-            var newsqlTable = "create table users (username varchar(50) NOT NULL, password varchar(50) NOT NULL, email varchar(50) NOT NULL, nickname varchar(50) NOT NULL, primary key(username))";
+            var newsqlTable = "CREATE TABLE IF NOT EXISTS users (username varchar(50) NOT NULL, password varchar(50) NOT NULL, email varchar(50) NOT NULL, nickname varchar(50) NOT NULL, primary key(username))";
             String messageTable = "CREATE TABLE message (" +
                       "id INTEGER PRIMARY KEY AUTOINCREMENT, " + 
                       "target VARCHAR(50) NOT NULL, " +
                       "center VARCHAR(50) NOT NULL, " +
                       "epoch VARCHAR(50) NOT NULL, " +
-                      "elements TEXT NOT NULL, " +
-                      "vector TEXT NOT NULL, " +
+                      "elements TEXT , " +
+                      "vector TEXT , " +
                       "meta TEXT NOT NULL," +
-                      "record_time_received INTEGER NOT NULL," +
+                      "record_time_received TEXT NOT NULL," +
                       "record_owner TEXT NOT NULL" +
                       ");";
 
@@ -76,12 +76,12 @@ public class MessageDatabase {
         String dbPath = "jdbc:sqlite:" + dbName;
         String url = dbPath;
         this.dbConnection = DriverManager.getConnection(url);
-        System.out.println("Connection to SQLite has been done correctly");
+        System.out.println("Connection to SQLite has been done correctly");      
+        init();
         
-        
-        if(!dbconn){
-            init();
-        }
+        //if(!dbconn){
+        //    init();
+        //}
         
     }
 

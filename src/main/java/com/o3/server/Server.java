@@ -96,16 +96,29 @@ public class Server implements HttpHandler {
 
                     JSONObject metadata = new JSONObject();
                     
-
+                    
                     MessageDatabase sql = MessageDatabase.getInstance();
                     String userinfo = sql.getRegisterationInfo(user);
-                    String[] userparts = userinfo.split(":");
+                    if (userinfo == null) {
+                        metadata.put("record_owner", user); 
+                    } else {
+                        String[] userparts = userinfo.split(":");
+                        metadata.put("record_owner", userparts[3]);
+                    }
+                    //String userinfo = sql.getRegisterationInfo(user);
+                    //String[] userparts = userinfo.split(":");
                     
+                    
+                    JSONObject incomingMetadata = JObject.optJSONObject("metadata");
+                    String payload = "";
+                    if (incomingMetadata != null) {
+                        payload = incomingMetadata.optString("record_payload", "");
+}
                     
                     metadata.put("record_time_received", dateText);
-                    metadata.put("record_owner", userparts[3]);
+                    //metadata.put("record_owner", userparts[3]);
                     metadata.put("id",sql.createUniqueID());
-                    metadata.put("record_payload",JObject.optString("record_payload", ""));
+                    metadata.put("record_payload",payload);
 
                     
                     //metadata created <---

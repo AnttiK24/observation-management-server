@@ -51,10 +51,10 @@ public class RegistrationHandler implements HttpHandler {
                     boolean NewUser = userAuth.addUser(newuser, getUrl());
 
                     if(NewUser){
-
-                        MessageDatabase obje = MessageDatabase.getInstance();
-                        String path = getUrl();
-                        obje.saveUser(newuser, path);
+                        //1
+                        //MessageDatabase obje = MessageDatabase.getInstance();
+                        //String path = getUrl();
+                        //obje.saveUser(newuser, path);
 
                         String responseString = "Registeration was successfull";
                         byte [] bytes = responseString.getBytes("UTF-8");
