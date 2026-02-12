@@ -44,7 +44,7 @@ public class MessageDatabase {
         
         if(null != dbConnection) {
             var newsqlTable = "CREATE TABLE IF NOT EXISTS users (username varchar(50) NOT NULL, password varchar(50) NOT NULL, email varchar(50) NOT NULL, nickname varchar(50) NOT NULL, primary key(username))";
-            String messageTable = "CREATE TABLE message (" +
+            String messageTable = "CREATE TABLE IF NOT EXISTS message (" +
                       "id INTEGER PRIMARY KEY AUTOINCREMENT, " + 
                       "target VARCHAR(50) NOT NULL, " +
                       "center VARCHAR(50) NOT NULL, " +
