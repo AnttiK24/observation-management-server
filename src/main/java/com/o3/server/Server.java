@@ -57,7 +57,7 @@ public class Server implements HttpHandler {
                 boolean meta_data = !JObject.isNull("metadata");                         
                 
                 if(body_and_epoch && orbit_and_state && meta_data) {
-
+                    /* 
                     if (!JObject.isNull("orbital_elements")) {
                         JSONObject orbital = JObject.getJSONObject("orbital_elements");
                         orbital.getDouble("eccentricity");
@@ -84,7 +84,7 @@ public class Server implements HttpHandler {
                             throw new JSONException("invalid format in State_vector");
                         }
                     }
-                    
+                    */
 
                     //creating metadata with utc time --->
                     ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));  
