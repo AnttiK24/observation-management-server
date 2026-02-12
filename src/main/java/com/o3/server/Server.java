@@ -88,7 +88,7 @@ public class Server implements HttpHandler {
                         for (int i = 0; i < 3; i++) {
                             position.getDouble(i);
                             velocity.getDouble(i);
-        }
+                        }
                     }
                     
 
@@ -117,8 +117,8 @@ public class Server implements HttpHandler {
                     
                     JSONObject incomingMetadata = JObject.optJSONObject("metadata");
                     String payload = "";
-                    if (incomingMetadata != null && incomingMetadata.has("record_payload")) {
-                        payload = incomingMetadata.getString("record_payload");
+                    if (incomingMetadata != null) {
+                        payload = incomingMetadata.optString("record_payload", "");
 }
                     
                     metadata.put("record_time_received", dateText);
