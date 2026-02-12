@@ -10,7 +10,6 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.sql.Types;
 
 import org.json.JSONObject;
 
@@ -92,34 +91,47 @@ public class MessageDatabase {
         dbConnection = null;
     }  
     
-    public void savedata(ObservationRecord record, String dbPath) throws SQLException {
-    String sql = "INSERT INTO message (target, center, epoch, elements, vector, meta, record_time_received, record_owner) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-    
-    try (PreparedStatement pstmt = dbConnection.prepareStatement(sql)) {
-        pstmt.setString(1, record.getTargetBodyName());
-        pstmt.setString(2, record.getCenterBodyName());
-        pstmt.setString(3, record.getEpoch());
+    public void savedata(ObservationRecord record, String path) throws SQLException {
+        System.err.println("savedata testi");
+        //Integer id = record.getMetadata().getInt("id");
+        String target = record.getTargetBodyName();
+        String center = record.getCenterBodyName();
+        String epoch = record.getEpoch();
+        String elements = record.getOrbitalElements().toString();
+        String vector = record.getStateVector().toString();
+        String meta = record.getMetadata().toString();
 
         
-        if (record.getOrbitalElements() != null) {
-            pstmt.setString(4, record.getOrbitalElements().toString());
-        } else {
-            pstmt.setNull(4, java.sql.Types.VARCHAR);
+        //String record_time_recieved = record.getMetadata().getString("record_time_received");
+        //String record_owner = record.getMetadata().getString("record_owner");
+        
+        String record_time_string = record.getMetadata().getString("record_time_received");
+        ZonedDateTime zdt = ZonedDateTime.parse(record_time_string);
+        long record_time_long = zdt.toInstant().toEpochMilli();
+
+        String record_owner = record.getMetadata().getString("record_owner");
+
+        String sql_query = "INSERT INTO message (target, center, epoch, elements, vector, meta, record_time_received, record_owner) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+        if(dbConnection == null) {
+            String[] parts = path.split(":");
+            open(parts[2]);
         }
 
-        
-        if (record.getStateVector() != null) {
-            pstmt.setString(5, record.getStateVector().toString());
-        } else {
-            pstmt.setNull(5, java.sql.Types.VARCHAR);
-        }
+        var stmnt = dbConnection.prepareStatement(sql_query);
 
-        pstmt.setString(6, record.getMetadata().toString());
-        pstmt.setString(7, record.getMetadata().getString("record_time_received"));
-        pstmt.setString(8, record.getMetadata().getString("record_owner"));
-        
-        pstmt.executeUpdate();
-    }
+        //stmnt.setInt(0, id);
+        stmnt.setString(1,target);
+        stmnt.setString(2, center);
+        stmnt.setString(3, epoch);
+        stmnt.setString(4, elements);
+        stmnt.setString(5, vector);
+        stmnt.setString(6, meta);
+        stmnt.setLong(7, record_time_long);
+        stmnt.setString(8, record_owner);
+
+        stmnt.executeUpdate();
+        stmnt.close();
     }
 
     public void saveUser(User user, String path) throws SQLException {

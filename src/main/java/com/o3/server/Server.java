@@ -52,13 +52,16 @@ public class Server implements HttpHandler {
                                        !JObject.isNull("center_body_name") &&
                                        !JObject.isNull("epoch");
                 
-                boolean orbit_and_state = !JObject.isNull("orbital_elements") || 
-                                         !JObject.isNull("state_vector");
+                boolean hasOrbital = JObject.has("orbital_elements") && !JObject.isNull("orbital_elements");
+                boolean hasState = JObject.has("state_vector") && !JObject.isNull("state_vector");
+
+                boolean orbit_and_state = hasOrbital || hasState;
+
                 boolean meta_data = !JObject.isNull("metadata");                         
                 
                 if(body_and_epoch && orbit_and_state && meta_data) {
-                    /* 
-                    if (!JObject.isNull("orbital_elements")) {
+                    
+                    if (hasOrbital) {
                         JSONObject orbital = JObject.getJSONObject("orbital_elements");
                         orbital.getDouble("eccentricity");
                         orbital.getDouble("semi_major_axis_au");
@@ -68,23 +71,26 @@ public class Server implements HttpHandler {
                         orbital.getDouble("mean_anomaly_deg");
                     }
 
-                    if (!JObject.isNull("state_vector")) {
-                        JSONObject state = JObject.getJSONObject("state_vector");
-                        
-                        if (state.has("position_au") && state.has("velocity_au_per_day")) {
-                            JSONArray position = state.getJSONArray("position_au");
-                            JSONArray velocity = state.getJSONArray("velocity_au_per_day");
-                            if(position.length() > 0) {
-                                position.getDouble(0);
-                            }
-                            if(velocity.length() > 0){
-                               velocity.getDouble(0); 
-                            } 
-                        }else{
-                            throw new JSONException("invalid format in State_vector");
+                    if (hasState) {
+                     JSONObject state = JObject.getJSONObject("state_vector");
+
+                        if (!state.has("position_au") || !state.has("velocity_au_per_day")) {
+                            throw new JSONException("Invalid format in state_vector");
                         }
+
+                        JSONArray position = state.getJSONArray("position_au");
+                        JSONArray velocity = state.getJSONArray("velocity_au_per_day");
+
+                        if (position.length() != 3 || velocity.length() != 3) {
+                            throw new JSONException("State vector must contain 3 elem");
+                        }
+
+                        for (int i = 0; i < 3; i++) {
+                            position.getDouble(i);
+                            velocity.getDouble(i);
+        }
                     }
-                    */
+                    
 
                     //creating metadata with utc time --->
                     ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));  
