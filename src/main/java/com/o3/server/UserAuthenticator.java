@@ -25,17 +25,16 @@ public class UserAuthenticator extends com.sun.net.httpserver.BasicAuthenticator
         
         MessageDatabase sql = MessageDatabase.getInstance();
         String userinfo = sql.getRegisterationInfo(username);
-        
+    
         if(userinfo == null) {
             return false;
         }
 
         String[] parts = userinfo.split(":");
-        String sqlPassword = parts[1];
+        String sqlPassword = parts[1]; 
 
-        String salt = sqlPassword.substring(sqlPassword.length() - 15, sqlPassword.length()); 
-
-        String mathing_pass = sql.HashPassword(password, salt);
+    
+        String mathing_pass = sql.HashPassword(password, sqlPassword);
 
         return sqlPassword.equals(mathing_pass);
     }

@@ -44,11 +44,11 @@ public class MessageDatabase {
         }
     }
 
-    
+
      public void init() throws SQLException {
         
         if(null != dbConnection) {
-            var newsqlTable = "CREATE TABLE IF NOT EXISTS users (username varchar(50) NOT NULL, password varchar(50) NOT NULL, email varchar(50) NOT NULL, nickname varchar(50) NOT NULL, primary key(username))";
+            var newsqlTable = "CREATE TABLE IF NOT EXISTS users (username varchar(50) NOT NULL, password TEXT NOT NULL, email varchar(50) NOT NULL, nickname varchar(50) NOT NULL, primary key(username))";
             String messageTable = "CREATE TABLE IF NOT EXISTS message (" +
                       "id INTEGER PRIMARY KEY AUTOINCREMENT, " + 
                       "target VARCHAR(50) NOT NULL, " +
@@ -277,21 +277,12 @@ public class MessageDatabase {
 
     public String HashPassword(String password, String salting){
         
-        SecureRandom random = new SecureRandom();
-        String saltString;
+       
 
-        if (salting.equals(null)){
-           byte[] salt = random.generateSeed(16);
-           saltString = salt.toString(); 
-        }else {
-            saltString = salting;
-        } 
+        if(salting == null) {
+            return Crypt.crypt(password);
+        }
         
-        
-        String hashedpass = Crypt.crypt(password,saltString);
-        
-     
-        return hashedpass;
+        return Crypt.crypt(password, salting);
     }
-
 }
