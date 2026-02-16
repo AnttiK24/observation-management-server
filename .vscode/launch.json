@@ -9,9 +9,9 @@
             "name": "Current File",
             "request": "launch",
             "mainClass": "${file}",
-            "args": "/path/to/keystore.jks keystore-password",
+            "args": "C:/Users/kosol/Documents/ohjelmointi-3/group-0042-project/keystore.jks 082650",
             "env": {
-                "DATABASE_PATH": "/path/to/database.db"
+                "DATABASE_PATH": "jdbc:sqlite:DB"
             }
         },
         {
@@ -20,9 +20,9 @@
             "request": "launch",
             "mainClass": "com.o3.server.Server",
             "projectName": "server",
-            "args": "/path/to/keystore.jks keystore-password",
+            "args": "C:/Users/kosol/Documents/ohjelmointi-3/group-0042-project/keystore.jks 082650",
             "env": {
-                "DATABASE_PATH": "/path/to/database.db"
+                "DATABASE_PATH": "jdbc:sqlite:DB"
             }
         }
     ]

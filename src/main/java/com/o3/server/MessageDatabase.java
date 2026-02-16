@@ -15,6 +15,10 @@ import org.json.JSONObject;
 
 import java.io.File;
 
+import java.util.concurrent.Executors; 
+import java.security.SecureRandom;  
+import org.apache.commons.codec.digest.Crypt;
+
 
 
 
@@ -40,6 +44,7 @@ public class MessageDatabase {
         }
     }
 
+    
      public void init() throws SQLException {
         
         if(null != dbConnection) {
@@ -144,6 +149,8 @@ public class MessageDatabase {
         String email = user.getEmail();
         String nickname = user.getNicname(); 
 
+        password = HashPassword(password, null);
+
         
         String sql_query = "INSERT INTO users (username, password, email, nickname) VALUES (?, ?, ?, ?)";
 
@@ -203,10 +210,7 @@ public class MessageDatabase {
                 ObservationRecord new_message = new ObservationRecord(target,center,epoch,elements,vector,meta);
                 messagelist.add(new_message);
 
-                /* 
-
                 
-                */
             }
 
             
@@ -270,4 +274,24 @@ public class MessageDatabase {
         ZonedDateTime zdt = ZonedDateTime.ofInstant(java.time.Instant.ofEpochMilli(epoch), ZoneId.of("UTC"));
         return zdt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX"));
     }
+
+    public String HashPassword(String password, String salting){
+        
+        SecureRandom random = new SecureRandom();
+        String saltString;
+
+        if (salting.equals(null)){
+           byte[] salt = random.generateSeed(16);
+           saltString = salt.toString(); 
+        }else {
+            saltString = salting;
+        } 
+        
+        
+        String hashedpass = Crypt.crypt(password,saltString);
+        
+     
+        return hashedpass;
+    }
+
 }

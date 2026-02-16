@@ -11,6 +11,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -119,11 +120,21 @@ public class Server implements HttpHandler {
                     String payload = "";
                     if (incomingMetadata != null) {
                         payload = incomingMetadata.optString("record_payload", "");
-}
+                    }
                     
+                    
+
                     metadata.put("record_time_received", dateText);
                     //metadata.put("record_owner", userparts[3]);
                     metadata.put("id",sql.createUniqueID());
+
+                    Object observatory = null;
+                    if(incomingMetadata.has("observatory")){
+                        observatory = incomingMetadata.optJSONArray("observatory");
+                        metadata.put("observatory", observatory);
+                    }
+                    
+
                     metadata.put("record_payload",payload);
 
                     
@@ -265,9 +276,18 @@ public class Server implements HttpHandler {
             
             
             //sql.open(arrays[2]);
+            
+            if(dbPath.startsWith("jdbc:sqlite:")){
+                dbPath = dbPath.substring(12); 
+            }    
+            if(dbPath.startsWith(":")){
+                dbPath = dbPath.substring(1);
+            }
+            
+            
             sql.open(dbPath);
             
-            MessageDatabase.getInstance();
+            //MessageDatabase.getInstance();
 
             HttpsServer server = HttpsServer.create(new InetSocketAddress(8001),0);
             UserAuthenticator User = new UserAuthenticator("datarecord");
@@ -287,8 +307,8 @@ public class Server implements HttpHandler {
                     params.setSSLParameters(sslparams); 
                 }
             });
-            server.setExecutor(null); // creates a default executor
-            System.out.println("käynnistit serverin http://localhost:8001/datarecord");
+            server.setExecutor(Executors.newCachedThreadPool()); 
+            System.out.println("käynnistit serverin https://localhost:8001/datarecord");
             //curl https://127.0.0.1:8001/obervation -d "This is a message"
             server.start();
         } catch (FileNotFoundException e) { 

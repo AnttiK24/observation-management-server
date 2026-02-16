@@ -33,7 +33,11 @@ public class UserAuthenticator extends com.sun.net.httpserver.BasicAuthenticator
         String[] parts = userinfo.split(":");
         String sqlPassword = parts[1];
 
-        return sqlPassword.equals(password);
+        String salt = sqlPassword.substring(sqlPassword.length() - 15, sqlPassword.length()); 
+
+        String mathing_pass = sql.HashPassword(password, salt);
+
+        return sqlPassword.equals(mathing_pass);
     }
 
     public boolean addUser(User newUser, String path) {
