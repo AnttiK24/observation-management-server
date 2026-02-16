@@ -125,12 +125,23 @@ public class Server implements HttpHandler {
                     
 
                     metadata.put("record_time_received", dateText);
-                    //metadata.put("record_owner", userparts[3]);
+                    
                     metadata.put("id",sql.createUniqueID());
 
-                    Object observatory = null;
+                    JSONArray observatory = null;
                     if(incomingMetadata.has("observatory")){
                         observatory = incomingMetadata.optJSONArray("observatory");
+                        
+
+                        if (observatory.length() > 0) {
+                            JSONObject obscheck = observatory.getJSONObject(0);
+
+                            
+                            if (!obscheck.has("latitude") || !obscheck.has("longitude") || !obscheck.has("observatory_name")) {
+                                throw new JSONException("Observatory missing fields");
+                            }
+                        }
+
                         metadata.put("observatory", observatory);
                     }
                     
