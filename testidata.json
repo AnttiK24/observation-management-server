@@ -1,0 +1,29 @@
+{
+    "target_body_name": "Moon 301",
+    "center_body_name": "Earth 399",
+    "epoch": "2025-01-01T00:00:00Z",
+    "orbital_elements": {
+        "semi_major_axis_au": 1.458,
+        "eccentricity": 0.223,
+        "inclination_deg": 10.829,
+        "longitude_ascending_node_deg": 304.3,
+        "argument_of_periapsis_deg": 178.7,
+        "mean_anomaly_deg": 120.5
+    },
+    "state_vector": {
+        "position_au": [0.123, 1.456,-0.789],
+        "velocity_au_per_day": [-0.012, 0.015, 0.001]
+    },
+    "metadata": {
+        "record_time_received": "2025-11-27T07:27:27.058Z",
+        "record_owner": "Example_user",
+        "id": 11,
+        "observatory": [{
+            "weather": [],
+            "latitude": 43.10591835328922,
+            "observatory_name": "Example observatory",
+            "longitude": 50.85719242538301
+        }],
+    "record_payload": "Example payload"
+    }
+}

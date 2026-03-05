@@ -51,10 +51,7 @@ public class RegistrationHandler implements HttpHandler {
                     boolean NewUser = userAuth.addUser(newuser, getUrl());
 
                     if(NewUser){
-                        //1
-                        //MessageDatabase obje = MessageDatabase.getInstance();
-                        //String path = getUrl();
-                        //obje.saveUser(newuser, path);
+                     
 
                         String responseString = "Registeration was successfull";
                         byte [] bytes = responseString.getBytes("UTF-8");
@@ -89,6 +86,7 @@ public class RegistrationHandler implements HttpHandler {
                     
                 }
             }catch (Exception e){
+                e.printStackTrace();
                 String responseString = "Credentials were not ok , exception catch";
                 byte [] bytes = responseString.getBytes("UTF-8");
                 exchange.getResponseHeaders().set("Content-Type", "application/json");

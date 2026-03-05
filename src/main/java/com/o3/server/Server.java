@@ -1,10 +1,15 @@
 package com.o3.server;
 
-import com.sun.net.httpserver.*;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
-import java.sql.SQLException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -23,7 +28,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.*;
+import com.sun.net.httpserver.HttpContext;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpsConfigurator;
+import com.sun.net.httpserver.HttpsParameters;
+import com.sun.net.httpserver.HttpsServer;
 
 
 
@@ -112,8 +122,7 @@ public class Server implements HttpHandler {
                         String[] userparts = userinfo.split(":");
                         metadata.put("record_owner", userparts[3]);
                     }
-                    //String userinfo = sql.getRegisterationInfo(user);
-                    //String[] userparts = userinfo.split(":");
+                  
                     
                     
                     JSONObject incomingMetadata = JObject.optJSONObject("metadata");
@@ -128,25 +137,47 @@ public class Server implements HttpHandler {
                     
                     metadata.put("id",sql.createUniqueID());
 
+                    
+                    // ------------------
                     JSONArray observatory = null;
-                    if(incomingMetadata.has("observatory")){
+
+                    if (incomingMetadata != null && incomingMetadata.has("observatory")) {
                         observatory = incomingMetadata.optJSONArray("observatory");
-                        
 
-                        if (observatory.length() > 0) {
-                            JSONObject obscheck = observatory.getJSONObject(0);
+                        if (observatory != null && observatory.length() > 0) {
+                            for (int i = 0; i < observatory.length(); i++) {
+                                JSONObject obscheck = observatory.getJSONObject(i);
 
-                            
-                            if (!obscheck.has("latitude") || !obscheck.has("longitude") || !obscheck.has("observatory_name")) {
-                                throw new JSONException("Observatory missing fields");
+                                
+                                if (!obscheck.has("latitude") || !obscheck.has("longitude") || !obscheck.has("observatory_name")) {
+                                    throw new JSONException("Observatory missing fields");
+                                }
+
+                                
+                                if (obscheck.has("weather")) {
+                                    String lat = String.valueOf(obscheck.getDouble("latitude"));
+                                    String lon = String.valueOf(obscheck.getDouble("longitude"));
+
+                                    weather weatherdata = new weather();
+                                    JSONObject importedweather = weatherdata.getWeatherData(lat, lon);
+
+                                    if (importedweather != null) {
+                                        obscheck.put("weather", importedweather);
+                                    } else {
+                                        continue;
+                                    }
+                                }
                             }
                         }
 
                         metadata.put("observatory", observatory);
                     }
-                    
 
-                    metadata.put("record_payload",payload);
+                    metadata.put("record_payload", payload);
+
+                    //------------------
+                    
+                   
 
                     
                     //metadata created <---
@@ -177,7 +208,7 @@ public class Server implements HttpHandler {
                     os.close();
                 }
             }catch (Exception e) {
-                
+                System.err.println(e);
                 String error = "Invalid format, expception";
                 byte[] bytes = error.getBytes(StandardCharsets.UTF_8);
                 exchange.sendResponseHeaders(400, bytes.length);
@@ -298,13 +329,17 @@ public class Server implements HttpHandler {
             
             sql.open(dbPath);
             
-            //MessageDatabase.getInstance();
+            
 
             HttpsServer server = HttpsServer.create(new InetSocketAddress(8001),0);
             UserAuthenticator User = new UserAuthenticator("datarecord");
-            HttpContext context = server.createContext("/datarecord", new Server()); 
+            HttpContext context = server.createContext("/datarecord", new Server());
             context.setAuthenticator(User);
             server.createContext("/registration", new RegistrationHandler(User));
+            
+            HttpContext context_collections = server.createContext("/collections", new CollectionsHandler());
+            context_collections.setAuthenticator(User);
+
             
             String keystorePath_location = args[0];
             String keystore_passW = args[1];
@@ -320,10 +355,10 @@ public class Server implements HttpHandler {
             });
             server.setExecutor(Executors.newCachedThreadPool()); 
             System.out.println("käynnistit serverin https://localhost:8001/datarecord");
-            //curl https://127.0.0.1:8001/obervation -d "This is a message"
+            
             server.start();
         } catch (FileNotFoundException e) { 
-            // Certificate file not found! 
+             
             System.out.println("Certificate not found!"); 
             e.printStackTrace(); 
         } catch (Exception e) { 

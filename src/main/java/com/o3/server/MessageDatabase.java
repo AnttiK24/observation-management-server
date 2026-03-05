@@ -60,13 +60,29 @@ public class MessageDatabase {
                       "record_time_received TEXT NOT NULL," +
                       "record_owner TEXT NOT NULL" +
                       ");";
+            
+            String collection_id = "CREATE TABLE IF NOT EXISTS collections (" +
+                       "id INTEGER PRIMARY KEY AUTOINCREMENT)";
+
+            String collectiontable = "CREATE TABLE IF NOT EXISTS collection_messages (" +
+                        "collection_id INTEGER, " +
+                        "message_id INTEGER, " +
+                        "FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE, " +
+                        "FOREIGN KEY (message_id) REFERENCES message(id) ON DELETE CASCADE)";     
+
 
             Statement statementfq = dbConnection.createStatement();
             Statement statementfm = dbConnection.createStatement();
+            Statement statementc = dbConnection.createStatement();
+            Statement statementci = dbConnection.createStatement();
+
             statementfq.executeUpdate(newsqlTable);
             statementfm.executeUpdate(messageTable);
+            statementc.executeUpdate(collectiontable);
+            statementci.executeUpdate(collection_id);
             statementfq.close();
             statementfm.close();
+            statementc.close();
         }
         
     }
@@ -84,9 +100,7 @@ public class MessageDatabase {
         System.out.println("Connection to SQLite has been done correctly");      
         init();
         
-        //if(!dbconn){
-        //    init();
-        //}
+    
         
     }
 
@@ -98,18 +112,16 @@ public class MessageDatabase {
     
     public void savedata(ObservationRecord record, String path) throws SQLException {
         System.err.println("savedata testi");
-        //Integer id = record.getMetadata().getInt("id");
+
         String target = record.getTargetBodyName();
         String center = record.getCenterBodyName();
         String epoch = record.getEpoch();
-        //String elements = record.getOrbitalElements().toString();
-        //String vector = record.getStateVector().toString();
+
         String meta = record.getMetadata().toString();
 
         String elements = (record.getOrbitalElements() != null) ? record.getOrbitalElements().toString() : "{}";
         String vector = (record.getStateVector() != null) ? record.getStateVector().toString() : "{}";
-        //String record_time_recieved = record.getMetadata().getString("record_time_received");
-        //String record_owner = record.getMetadata().getString("record_owner");
+
         
         String record_time_string = record.getMetadata().getString("record_time_received");
         ZonedDateTime zdt = ZonedDateTime.parse(record_time_string);
@@ -221,8 +233,7 @@ public class MessageDatabase {
     }
     
     public String getRegisterationInfo(String user) {
-        //make changes to adduser in Userauthentication
-        //returning a string
+
         var sql = "SELECT * FROM users WHERE username = ?";
         
         try(PreparedStatement stmnt = dbConnection.prepareStatement(sql)){
@@ -285,4 +296,104 @@ public class MessageDatabase {
         
         return Crypt.crypt(password, salting);
     }
+
+    public boolean CheckMessageID(int id){
+        var sql_id = "SELECT 1 FROM message WHERE id = ?";
+        try(PreparedStatement statemnt = dbConnection.prepareStatement(sql_id)){
+          
+            statemnt.setInt(1,id);
+            try(ResultSet rs = statemnt.executeQuery()){
+                return rs.next();
+            }
+
+
+        }catch(Exception e){
+
+        }
+       return false;
+
+
+
+    }
+
+    public int createCollection() throws SQLException {
+        String sql = "INSERT INTO collections DEFAULT VALUES";
+        try (PreparedStatement st = dbConnection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            st.executeUpdate();
+            try (ResultSet rs = st.getGeneratedKeys()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        }
+        try (Statement st = dbConnection.createStatement();
+            ResultSet rs = st.executeQuery("SELECT last_insert_rowid()")) {
+            if (rs.next()) return rs.getInt(1);
+        }
+        throw new SQLException("Could not create collection id");
+    }
+
+    public void addMessagesToCollection(int collectionId, int[] messageIds) throws SQLException {
+        String sql = "INSERT INTO collection_messages (collection_id, message_id) VALUES (?, ?)";
+        try (PreparedStatement st = dbConnection.prepareStatement(sql)) {
+            for (int messageI : messageIds) {
+                st.setInt(1, collectionId);
+                st.setInt(2, messageI);
+                st.addBatch();
+            }
+            st.executeBatch();
+        }
+    }
+
+    public List<Integer> getAllCollectionIds() throws SQLException {
+        List<Integer> ids = new ArrayList<>();
+        String sql = "SELECT id FROM collections";
+        try (Statement st = dbConnection.createStatement();
+            ResultSet rs = st.executeQuery(sql)) {
+            while (rs.next()) ids.add(rs.getInt("id"));
+        }
+        return ids;
+    }
+
+    public List<ObservationRecord> getMessagesFromCollection(int collectionId) throws SQLException {
+        List<ObservationRecord> list = new ArrayList<>();
+
+
+        String SQLids = "SELECT message_id FROM collection_messages WHERE collection_id = ?";
+        List<Integer> messgIds = new ArrayList<>();
+        try (PreparedStatement st = dbConnection.prepareStatement(SQLids)) {
+            st.setInt(1, collectionId);
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) messgIds.add(rs.getInt("message_id"));
+            }
+        }
+        String sqlMsg = "SELECT * FROM message WHERE id = ?";
+        try (PreparedStatement st = dbConnection.prepareStatement(sqlMsg)) {
+            for (int id : messgIds) {
+                st.setInt(1, id);
+                try (ResultSet rs = st.executeQuery()) {
+                    if (!rs.next()) continue;
+
+                    String target = rs.getString("target");
+                    String center = rs.getString("center");
+                    String epoch = rs.getString("epoch");
+
+                    String elString = rs.getString("elements");
+                    String vecString = rs.getString("vector");
+                    String metaString = rs.getString("meta");
+
+                    JSONObject elements = (elString == null || elString.equals("{}")) ? null : new JSONObject(elString);
+                    JSONObject vector = (vecString == null || vecString.equals("{}")) ? null : new JSONObject(vecString);
+                    JSONObject meta = (metaString != null) ? new JSONObject(metaString) : new JSONObject();
+
+                    long timeLong = rs.getLong("record_time_received");
+                    meta.put("record_time_received", formatEpoch(timeLong));
+                    meta.put("id", rs.getInt("id"));
+
+                    ObservationRecord rec = new ObservationRecord(target, center, epoch, elements, vector, meta);
+                    list.add(rec);
+                }
+            }
+        }
+        return list;
+    }
+
 }
